@@ -1,0 +1,41 @@
+name: Validate Bug Reports
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check bug reports structure
+        run: |
+          # Ищем все файлы в portfolio, содержащие "bug_report" в имени
+          files=$(find portfolio -type f -name "*bug_report*.md" 2>/dev/null || true)
+          if [ -z "$files" ]; then
+            echo "No bug report files found. Exiting with success."
+            exit 0
+          fi
+          exit_code=0
+          for file in $files; do
+            echo "Checking $file ..."
+            # Проверяем наличие обязательных полей
+            for field in "Название:" "Приоритет:" "Серьёзность:" "Шаги воспроизведения:" "Ожидаемый результат:"; do
+              if ! grep -q "$field" "$file"; then
+                echo "❌ Missing field: $field in $file"
+                exit_code=1
+              fi
+            done
+          done
+          if [ $exit_code -eq 0 ]; then
+            echo "✅ All bug reports are valid."
+          else
+            echo "❌ Some bug reports are missing required fields."
+          fi
+          exit $exit_code
+          Add CI workflow with correct folder name
